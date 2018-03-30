@@ -1,20 +1,21 @@
 <?php
-
+//Import connect file
 require_once 'connect.php';
 
-$order = '';
-$errors = [];
+$order = ''; //SQL Query for organizing
+$errors = []; //Initialise the errors array
 
+//Organizing the result on different order
 if(isset($_GET['order']) && isset($_GET['column'])){
 
 	if($_GET['column'] == 'lastname'){
-		$order = ' ORDER BY lastname';
+		$order = 'ORDER BY lastname';
 	} elseif($_GET['column'] = 'firstname'){
-		$order = ' ORDER BY firstname';
+		$order = 'ORDER BY firstname';
 	} elseif($_GET['column'] == 'birthdate'){
-		$order = ' ORDER BY birthdate';
+		$order = 'ORDER BY birthdate';
 	}
-
+	//ASCending or DESCending order
 	if($_GET['order'] == 'asc'){
 		$order .= ' ASC';
 	} elseif($_GET['order'] == 'desc'){
@@ -22,16 +23,17 @@ if(isset($_GET['order']) && isset($_GET['column'])){
 	}
 }
 
+//Multiple checks about the provided informations
 if(!empty($_POST)){
 	foreach($_POST as $key => $value){
 		$_POST[$key] = strip_tags(trim($value));
 	}
 
-	if(strlen($_POST['firstname'] < 3)){
+	if(strlen($_POST['firstname']) < 3){
 		$errors[] = 'Le prénom doit comporter au moins 3 caractères';
 	}
 
-	if(strlen($_POST['lastname'] < 3)){
+	if(strlen($_POST['lastname']) < 3){
 		$errors[] = 'Le nom doit comporter au moins 3 caractères';
 	}
 
@@ -51,12 +53,13 @@ if(!empty($_POST)){
 		// error = 0 = insertion user
 		$insertUser = $db->prepare('INSERT INTO users (gender, firstname, lastname, email, birthdate, city) VALUES(:gender, :firstname, :lastname, :email, :birthdate, :city)');
 		$insertUser->bindValue(':gender', $_POST['gender']);
-		$insertUser->bindValue(':firstname', $_POST['fistname']);
+		$insertUser->bindValue(':firstname', $_POST['firstname']);
 		$insertUser->bindValue(':lastname', $_POST['lastname']);
 		$insertUser->bindValue(':email', $_POST['email']);
-		$insertUser->bindValue(':birthdate', date('Y-m-d', strtotime($_POST['birthdate'])));
+		$insertUser->bindValue(':birthdate', date('Y-m-d', strtotime($_POST['birthdate']))); //Transforming a string to a date
 		$insertUser->bindValue(':city', $_POST['city']);
 
+		//Using a try/catch block to avoid execution errors
 		try{
 			$insertUser->execute();
 			$createUser = true;
@@ -66,12 +69,13 @@ if(!empty($_POST)){
 	}
 }
 
-$queryUsers = $db->prepare('SELECT * FROM users '.$order);
-
-if($queryUsers->execute()){	
+$queryUsers = $db->prepare('SELECT * FROM users '.$order); //SQL query
+//Using a try/catch block to avoid execution errors
+try {
+	$queryUsers->execute();	
 	$users = $queryUsers->fetchAll();
-} else {
-	echo 'Error occured while connecting to DB';
+} catch (Error $e) {
+	echo 'Error occured: ' . $e->getMessage(); //Giving user informations about the error
 }
 ?>
 <!DOCTYPE html>
@@ -101,11 +105,13 @@ if($queryUsers->execute()){
 
 			<div class="row">
 				<?php
+				//Success message
 				if(isset($createUser) && $createUser == true){
 					echo '<div class="col-md-6 col-md-offset-3">';
 					echo '<div class="alert alert-success">Le nouvel utilisateur a été ajouté avec succès.</div>';
 					echo '</div><br>';
 				}
+				//Error message, displaying the errors
 				if(!empty($errors)){
 					echo '<div class="col-md-6 col-md-offset-3">';
 					echo '<div class="alert alert-danger">'.implode('<br>', $errors).'</div>';
@@ -125,6 +131,7 @@ if($queryUsers->execute()){
 								</tr>
 							</thead>
 							<tbody>
+							<!-- Looping through the array of users to get their informations -->
 								<?php foreach($users as $user):?>
 									<tr>
 										<td>
@@ -140,13 +147,13 @@ if($queryUsers->execute()){
 											<?php echo $user['email'];?>
 										</td>
 										<td>
-											<?php echo DateTime::createFromFormat('Y-m-d', $user['birthdate'])->diff(new DateTime('now'))->y;?> ans</td>
+											<?php echo DateTime::createFromFormat('Y-m-d', $user['birthdate'])->diff(new DateTime('now'))->y;?> ans</td> <!-- Displaying date as age -->
 									</tr>
 								<?php endforeach; ?>
 							</tbody>
 						</table>
 					</div>
-
+					<!-- Form to add a user -->
 					<div class="col-md-5">
 
 						<form method="post" class="form-horizontal well well-sm">
